@@ -4,6 +4,8 @@ import time
 import guidance
 import torch
 import json
+import shutil
+import os
 from diffusers import StableDiffusionPipeline, DPMSolverMultistepScheduler
 
 import PIL
@@ -35,6 +37,7 @@ hash_generated = False
 
 global user_ai
 user_ai = []
+global prompt_filename
 
 #LLM Generate Response
 def generate_answer(question):
@@ -81,7 +84,12 @@ You are asked to generate a picture. Please just describe its features with word
         for c in out2['answer']:
             yield c
         yield "\n\nGenerating the picture with Stable Diffusion...\n\n"
-        llm_prompt = open("LLM_Prompt.txt", "w")
+
+        ticks = str(time.time())
+        localtime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        global prompt_filename
+        prompt_filename = "LLM_Prompt-" + localtime + "-tick:"+ ticks + ".txt"
+        llm_prompt = open(prompt_filename, "w")
         llm_prompt.write(answer)
         llm_prompt.close()
     else:
@@ -106,6 +114,7 @@ global seed
 seed = 512
 
 #StableDiffusion Generate Image
+global image_filename
 def show_image(prompt, image):
     global seed
     print(seed)
@@ -128,9 +137,24 @@ def show_image(prompt, image):
     generator = torch.Generator("cuda").manual_seed(seed)
 
     image = pipe(prompt, generator=generator).images[0]
-    #global generated_image
-    #generated_image = image
-    image.save("StableDiffusion_Generation.png")
+
+    ticks = str(time.time())
+    localtime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    global image_filename
+    image_filename = "StableDiffusion_Generation-" + localtime + "-tick:"+ ticks + ".png"
+    global prompt_filename
+    start = "/home/tsinguserc/llm"
+    prompt_path = ""
+    for relative_path, directories, files in os.walk(start):
+        if prompt_filename in files:
+            full_path = os.path.join(start, relative_path, prompt_filename)
+            prompt_path = os.path.normpath(os.path.abspath(full_path))
+    llm_prompt_old = open(prompt_path, "r").read()
+    prompt_filename = "LLM_Prompt-" + localtime + "-tick:"+ ticks + ".txt"
+    llm_prompt_new = open(prompt_filename, "w")
+    llm_prompt_new.write(llm_prompt_old)
+    llm_prompt_new.close()
+    image.save(image_filename)
     return image
 
 def generate_image_if_needed(prompt, image):
@@ -154,13 +178,14 @@ def bot(history):
     print('bot return')
 
 def save_file():
-    gen_prompt = open("LLM_Prompt.txt", "r")
-    gen_image = Image.open("StableDiffusion_Generation.png")
+    gen_prompt = open(prompt_filename, "r")
+    gen_image = Image.open(image_filename)
     prompt = gen_prompt.read()
     image = gen_image.show()
     return (prompt, image)
 
 #Load Prompt and Image & Calculate Hash
+global hash_filename
 def hash_file():
     global hash_generated
     # make a hash object
@@ -168,14 +193,14 @@ def hash_file():
     hashvalue2 = hashlib.sha256()
     hashvalue4 = hashlib.sha256()
     # open file for reading in binary mode
-    with open("LLM_Prompt.txt",'rb') as file1:
+    with open(prompt_filename,'rb') as file1:
         chunk1 = 0
         while chunk1 != b'':
             # read only 1024 bytes at a time
             chunk1 = file1.read(1024)
             hashvalue1.update(chunk1)
 
-    with open("StableDiffusion_Generation.png",'rb') as file2:
+    with open(image_filename,'rb') as file2:
         chunk2 = 0
         while chunk2 != b'':
             chunk2 = file2.read(1024)
@@ -197,12 +222,16 @@ def hash_file():
     hash_final = "Final Hash of AI Generations: " + hashvalue4.hexdigest()
     show_seed = "The Seed of Stable Diffusion is: " + str(seed)
 
-    hashes = open("Hashes.txt", "w")
+    ticks = str(time.time())
+    localtime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    global hash_filename
+    hash_filename = "Hashes-" + localtime + "-tick:"+ ticks + ".txt"
+    hashes = open(hash_filename, "w")
     hashes.write(hash_prompt+'\n'+hash_image+'\n'+hash_SD+'\n'+hash_final+'\n'+show_seed)
     hashes.close()
     hash_generated = True
 
-    return open("Hashes.txt", "r").read()
+    return open(hash_filename, "r").read()
 
 w3 = Web3(Web3.HTTPProvider(parameters['my_provider_link']))
 global count
@@ -224,7 +253,7 @@ def sepolia_api():
     balance = w3.eth.get_balance(my_address) 
     print(f"Account balance: {w3.from_wei(balance, 'ether')} ETH")
 
-    hash_data = open("Hashes.txt", "r").read().encode('UTF-8')
+    hash_data = open(hash_filename, "r").read().encode('UTF-8')
 
     nonce = w3.eth.get_transaction_count(my_address)
     transaction_setting = dict(
@@ -248,19 +277,40 @@ def sepolia_api():
 
     transaction_raw_hash = w3.eth.send_raw_transaction(signed_txn.rawTransaction)
     transaction_hash = transaction_raw_hash.hex() 
-    transaction_details = open("Hashes.txt", "r").read() + '\n' + "Transaction Hash: " + transaction_hash + '\n' + "Transaction Sent!"+ '\n'
+    transaction_details = open(hash_filename, "r").read() + '\n' + "Transaction Hash: " + transaction_hash + '\n' + "Transaction Sent!"+ '\n'
     
     count += 1
 
     return transaction_details
 
+localtime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+folder_path = "./stablediffusion_generations/Generations-" + localtime
+os.makedirs(folder_path)
+global bundle_count
+bundle_count = 0
+def move_files():
+    global prompt_filename, image_filename, hash_filename, bundle_count
+    bundle_count += 1
+    file_exists = (prompt_filename!=None and image_filename!=None and hash_filename!=None)
+    if file_exists:
+        bundle_path = folder_path + "/Generation" + str(bundle_count)
+        os.makedirs(bundle_path)
+        shutil.move(prompt_filename, bundle_path)
+        shutil.move(image_filename, bundle_path)
+        shutil.move(hash_filename, bundle_path)
+        print(folder_path+' 创建成功')
+        return None
+
+    else:
+        print(folder_path+' 目录已存在')
+        return None
     
 #Design GUI with Gradio
 with gr.Blocks() as demo:
-    gr.Markdown("**生成式AI上链**")
+    gr.Markdown("**PromptEstate**")
 
     with gr.Tab("Chatbot"):
-        gr.Markdown("**聊天框**")
+        gr.Markdown("**ChatBot**")
         chatbot = gr.Chatbot([], elem_id="chatbot").style(height=300)
         with gr.Row():
             with gr.Column():
@@ -271,7 +321,7 @@ with gr.Blocks() as demo:
 
     with gr.Tab("Generate Image"):
         with gr.Column():
-            gr.Markdown("**Stable Diffusion生成图片**")
+            gr.Markdown("**Stable Diffusion Generate Image**")
             with gr.Row():
                 text_input = gr.Textbox(interactive=True, lines=10)
                 image_output = gr.Image()
@@ -287,7 +337,7 @@ with gr.Blocks() as demo:
             hash_output = gr.Textbox("Your hash values are shown here")
     with gr.Tab("Blockchain"):
         with gr.Column():
-            gr.Markdown("**哈希上链**")
+            gr.Markdown("**Hash on Blockchain**")
             with gr.Row():
                 hash_input = gr.Textbox(interactive=False, lines=10)
                 chain_output = gr.Textbox(interactive=False, lines=10)
@@ -300,8 +350,9 @@ with gr.Blocks() as demo:
     )
 
     def fill_prompt_fn(prompt):
+        global prompt_filename
         if is_generation:
-            return open("LLM_Prompt.txt", "r").read()
+            return open(prompt_filename, "r").read()
         else:
             return prompt
     fill_prompt = generate_prompt.then(fill_prompt_fn, text_input, text_input)
@@ -314,8 +365,9 @@ with gr.Blocks() as demo:
         return history
     
     def show_hash():
+        global hash_filename
         if hash_generated:
-            return open("Hashes.txt", "r").read()
+            return open(hash_filename, "r").read()
         else:
             return "No hash now"
         
@@ -333,7 +385,7 @@ with gr.Blocks() as demo:
     notify.then(lambda: gr.update(value="", interactive=True), inputs=None, outputs=txt)
 
     hash_shown = hash_button.click(hash_file, outputs=hash_output)
-    hash_shown.then(show_hash, inputs=None, outputs=hash_input)
+    hash_shown.then(show_hash, inputs=None, outputs=hash_input).then(move_files, inputs=None, outputs=None)
 
     on_chain_button.click(sepolia_api, inputs = None, outputs = chain_output)
 
