@@ -230,8 +230,6 @@ count = w3.eth.get_transaction_count(parameters['my_address'])
 
 #Set Seplolia Testnet API
 def sepolia_api():
-    global count
-    print(count)
     network_id = w3.net.version 
     print(f"Connected to network with ID: {network_id}")
 
@@ -247,30 +245,34 @@ def sepolia_api():
     hash_path = os.path.join(generation_save_path, 'hash.txt')
     hashes = open(hash_path, "r").read()
 
-    transaction_setting = dict(
-        nonce=count + 1,
-        maxFeePerGas=3000000000,
-        maxPriorityFeePerGas=2000000000,
-        gas=100000,
-        to=receiver_address,
-        value=100000000000000,
-        data=hashes.encode('UTF-8'),
-        type=2,  # (optional) the type is now implicitly set based on appropriate transaction params
-        chainId=11155111,
-    )
-
-    print(transaction_setting['data'])
-    print(type(transaction_setting['data']))
-    signed_txn = w3.eth.account.sign_transaction(
-    transaction_setting,
-    private_key,
-    )
-
-    transaction_raw_hash = w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+    while True:
+        try:
+            global count
+            print(count)
+            count += 1
+            transaction_setting = dict(
+                nonce=count,
+                maxFeePerGas=3000000000,
+                maxPriorityFeePerGas=2000000000,
+                gas=100000,
+                to=receiver_address,
+                value=100000000000000,
+                data=hashes.encode('UTF-8'),
+                type=2,  # (optional) the type is now implicitly set based on appropriate transaction params
+                chainId=11155111,
+            )
+            signed_txn = w3.eth.account.sign_transaction(
+                transaction_setting,
+                private_key,
+            )
+            transaction_raw_hash = w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+        # The document does not give the type of wrong nonce, so we have to catch all exceptions
+        except Exception as e:
+            print(e)
+            continue
+        break
     transaction_hash = transaction_raw_hash.hex() 
     transaction_details = "Transaction Hash: " + transaction_hash
-    
-    count += 1
 
     return transaction_details
 
