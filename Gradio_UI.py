@@ -1,11 +1,20 @@
 #!/usr/bin/env python3
 
+import sys
+if len(sys.argv) != 2:
+    print("Usage: " + sys.argv[0] + " config-file")
+    exit(1)
+
+import json
+
+with open(sys.argv[1], "r") as configs:
+    parameters = json.load(configs)
+
 import gradio as gr
 import random
 import time
 import guidance
 import torch
-import json
 import shutil
 import os
 from diffusers import StableDiffusionPipeline, DPMSolverMultistepScheduler
@@ -19,9 +28,6 @@ import hashlib
 
 import git
 from git import Repo
-
-with open("Configs.json", "r") as configs:
-    parameters = json.load(configs)
 
 guidance.llm = guidance.llms.OpenAI(
     'gpt-3.5-turbo',
