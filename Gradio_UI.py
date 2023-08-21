@@ -268,7 +268,7 @@ def sepolia_api():
 
     transaction_raw_hash = w3.eth.send_raw_transaction(signed_txn.rawTransaction)
     transaction_hash = transaction_raw_hash.hex() 
-    transaction_details = hashes + '\n' + "Transaction Hash: " + transaction_hash + '\n' + "Transaction Sent!"+ '\n'
+    transaction_details = "Transaction Hash: " + transaction_hash
     
     count += 1
 
@@ -276,7 +276,7 @@ def sepolia_api():
 
 global bundle_count
 bundle_count = 0
-def move_files():
+def move_files_fn():
     global bundle_count
     while True:
         bundle_count += 1
@@ -314,15 +314,9 @@ with gr.Blocks() as demo:
                     seed_change_button = gr.Button(value="Confirm")
             image_button = gr.Button("Generate Image")
 
-            hash_button = gr.Button("Generate Hash")
+            publish_button = gr.Button("Publish hash to Sepolia")
             hash_output = gr.Textbox("Your hash values are shown here")
-    with gr.Tab("Blockchain"):
-        with gr.Column():
-            gr.Markdown("**Hash on Blockchain**")
-            with gr.Row():
-                hash_input = gr.Textbox(interactive=False, lines=10)
-                chain_output = gr.Textbox(interactive=False, lines=10)
-            on_chain_button = gr.Button("Send Transaction")
+            chain_output = gr.Textbox(interactive=False, visible=False)
 
         
 
@@ -344,15 +338,7 @@ with gr.Blocks() as demo:
             return history
         history[-1][1] += "\n\nPicture generated with seed " + str(seed)+ ". Please view it in the “generate image” tab.\n\n"
         return history
-    
-    def show_hash():
-        if hash_generated:
-            global generation_save_path
-            hash_path = os.path.join(generation_save_path, 'hash.txt')
-            return open(hash_path, "r").read()
-        else:
-            return "No hash now"
-        
+
     def change_seed(seed_input):
         global seed
         seed = int(seed_input)
@@ -364,13 +350,12 @@ with gr.Blocks() as demo:
     
     generate_image = fill_prompt.then(generate_image_if_needed, inputs=[text_input, image_output], outputs = image_output)
     notify = generate_image.then(show_image_generation_done, inputs=chatbot, outputs=chatbot)
-    notify.then(lambda: gr.update(value="", interactive=True), inputs=None, outputs=txt)
+    lock_input = notify.then(lambda: gr.update(value="", interactive=True), inputs=None, outputs=txt)
+    hash_shown = lock_input.then(hash_file, outputs=hash_output)
 
-    hash_shown = hash_button.click(hash_file, outputs=hash_output)
-    hash_shown.then(show_hash, inputs=None, outputs=hash_input)
-
-    publish = on_chain_button.click(sepolia_api, inputs = None, outputs = chain_output)
-    publish.then(move_files, inputs=None, outputs=None)
+    publish = publish_button.click(sepolia_api, inputs = None, outputs = chain_output)
+    show_transaction = publish.then(lambda: gr.update(visible=True), inputs = None, outputs = chain_output)
+    move_files = show_transaction.then(move_files_fn, inputs=None, outputs=None)
 
 
 demo.queue()
