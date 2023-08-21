@@ -69,7 +69,7 @@ def generate_answer(question):
 {{query}}
 {{~/user}}
 {{#system~}}                   
-Does the user want you to generate a picture now? The system can generate a picture, you just need to describe it.
+Does the user want you to generate a picture now?
 {{~/system}}
 {{#assistant~}}                    
 {{select 'reply' options=["Yes", "No"]}}
