@@ -47,6 +47,7 @@ hash_generated = False
 global user_ai
 user_ai = []
 
+global stable_diffusion_prompt
 global generation_save_path
 
 #LLM Generate Response
@@ -95,15 +96,8 @@ You are asked to generate a picture. Please just describe its features with word
             yield c
         yield "\n\nGenerating the picture with Stable Diffusion...\n\n"
 
-        ticks = str(time.time())
-        localtime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        global generation_save_path
-        generation_save_path = os.path.join(save_path, "Generation-" + localtime + "-tick:"+ ticks)
-        os.mkdir(generation_save_path)
-        prompt_path = os.path.join(generation_save_path, 'stable_diffusion_prompt.txt')
-        prompt = open(prompt_path, 'w')
-        prompt.write(answer)
-        prompt.close()
+        global stable_diffusion_prompt
+        stable_diffusion_prompt = answer
     else:
         yield "Does the user want you to generate a picture?" + "\n\n" + out1['reply'] + "\n\n"
         prompt = prev_prompt + '''
@@ -147,7 +141,16 @@ def show_image(prompt):
 
     image = pipe(prompt, generator=generator).images[0]
 
+    ticks = str(time.time())
+    localtime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
     global generation_save_path
+    generation_save_path = os.path.join(save_path, "Generation-" + localtime + "-tick:"+ ticks)
+    os.mkdir(generation_save_path)
+
+    prompt_path = os.path.join(generation_save_path, 'stable_diffusion_prompt.txt')
+    with open(prompt_path, 'w') as prompt_file:
+        prompt_file.write(prompt)
+
     image_path = os.path.join(generation_save_path, "image.png")
     image.save(image_path)
     return image
@@ -328,13 +331,12 @@ with gr.Blocks() as demo:
         bot, chatbot, chatbot
     )
 
-    def fill_prompt_fn(prompt):
+    def fill_prompt_fn(old_prompt):
         if is_generation:
-            global generation_save_path
-            prompt_path = os.path.join(generation_save_path, 'stable_diffusion_prompt.txt')
-            return open(prompt_path, "r").read()
+            global stable_diffusion_prompt
+            return stable_diffusion_prompt
         else:
-            return prompt
+            return old_prompt
     fill_prompt = generate_prompt.then(fill_prompt_fn, text_input, text_input)
 
     def show_image_generation_done(history):
