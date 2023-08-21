@@ -126,7 +126,7 @@ global seed
 seed = 512
 
 #StableDiffusion Generate Image
-def show_image(prompt, image):
+def show_image(prompt):
     global seed
     print(seed)
 
@@ -156,7 +156,7 @@ def generate_image_if_needed(prompt, image):
     global is_generation
     if not is_generation:
         return image
-    return show_image(prompt, image)
+    return show_image(prompt)
 
 #Enter Text
 def add_text(history, text):
