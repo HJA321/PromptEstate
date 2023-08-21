@@ -45,12 +45,8 @@ hash_generated = False
 global user_ai
 user_ai = []
 
-global stable_diffusion_prompt
-global generation_save_path
-
-#LLM Generate Response
-def generate_answer(question):
-    global is_generation, user_ai
+def chat_log():
+    global user_ai
     prev_prompt = '''
 {{#system~}}
 You are helpful assistant.
@@ -59,7 +55,15 @@ You are helpful assistant.
     for item in user_ai:
         prev_prompt += '{{#user~}}\n' + item[0] + '\n{{~/user}}\n'
         prev_prompt += '{{#assistant~}}\n' + item[1] + '\n{{~/assistant}}\n'
+    return prev_prompt
 
+global stable_diffusion_prompt
+global generation_save_path
+
+#LLM Generate Response
+def generate_answer(question):
+    global is_generation, user_ai
+    prev_prompt = chat_log()
     program1 = guidance(prev_prompt + '''
 {{#user~}}
 {{query}}
@@ -145,6 +149,10 @@ def show_image(prompt):
     generation_save_path = os.path.join(save_path, "Generation-" + localtime + "-tick:"+ ticks)
     os.mkdir(generation_save_path)
 
+    chat_log_path = os.path.join(generation_save_path, 'chat-log.txt')
+    with open(chat_log_path, 'w') as chat_log_file:
+        chat_log_file.write(chat_log())
+
     prompt_path = os.path.join(generation_save_path, 'stable_diffusion_prompt.txt')
     with open(prompt_path, 'w') as prompt_file:
         prompt_file.write(prompt)
@@ -175,11 +183,19 @@ def bot(history):
 
 #Load Prompt and Image & Calculate Hash
 def hash_file():
+    if not is_generation:
+        return gr.update()
     global hash_generated
-    # make a hash object
-    hashvalue1 = hashlib.sha256()
-    hashvalue2 = hashlib.sha256()
-    hashvalue4 = hashlib.sha256()
+
+    final_hash = hashlib.sha256()
+
+    chat_log_hash = hashlib.sha256()
+    chat_log_path = os.path.join(generation_save_path, 'chat-log.txt')
+    with open(chat_log_path, 'rb') as chat_log_file:
+        chat_log_hash.update(chat_log_file.read())
+    final_hash.update(chat_log_hash.digest())
+
+    prompt_hash = hashlib.sha256()
     # open file for reading in binary mode
     prompt_path = os.path.join(generation_save_path, "stable_diffusion_prompt.txt")
     with open(prompt_path,'rb') as file1:
@@ -187,32 +203,28 @@ def hash_file():
         while chunk1 != b'':
             # read only 1024 bytes at a time
             chunk1 = file1.read(1024)
-            hashvalue1.update(chunk1)
+            prompt_hash.update(chunk1)
+    final_hash.update(prompt_hash.digest())
 
+    image_hash = hashlib.sha256()
     image_path = os.path.join(generation_save_path, "image.png")
     with open(image_path,'rb') as file2:
         chunk2 = 0
         while chunk2 != b'':
             chunk2 = file2.read(1024)
-            hashvalue2.update(chunk2)
-    
-    prompt_hash = hashvalue1.hexdigest().encode('utf-8')
-    image_hash = hashvalue2.hexdigest().encode('utf-8')
-    hashvalue4.update(prompt_hash)
-    hashvalue4.update(image_hash)
+            image_hash.update(chunk2)
+    final_hash.update(image_hash.digest())
 
     repo = git.Repo(stablediffusion_repository)
     commit_hash = repo.git.rev_parse("HEAD")
-    
-    hashvalue4.update(commit_hash.encode('utf-8'))
+    final_hash.update(commit_hash.encode('utf-8'))
 
-    hash_prompt = "Hash of Prompt: " + hashvalue1.hexdigest()
-    hash_image = "Hash of Generated Image: " + hashvalue2.hexdigest()
-    hash_SD = "Hash of Stable Diffusion: " + commit_hash
-    hash_final = "Final Hash of AI Generations: " + hashvalue4.hexdigest()
-    show_seed = "The Seed of Stable Diffusion is: " + str(seed)
-
-    hashes = hash_prompt+'\n'+hash_image+'\n'+hash_SD+'\n'+hash_final+'\n'+show_seed
+    hashes = 'SHA256 of chat log: ' + chat_log_hash.hexdigest() + '\n' + \
+        'SHA256 of Prompt: ' + prompt_hash.hexdigest() + '\n' + \
+        'SHA256 of Generated Image: ' + image_hash.hexdigest() + '\n' + \
+        'Commit hash of Stable Diffusion: ' + commit_hash + '\n' + \
+        'Final Hash of AI Generations: ' + final_hash.hexdigest() + '\n' + \
+        'The Seed of Stable Diffusion is: ' + str(seed)
 
     hash_path = os.path.join(generation_save_path, "hash.txt")
     hash_file = open(hash_path, "w")
