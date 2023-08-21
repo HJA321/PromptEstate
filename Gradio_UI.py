@@ -101,7 +101,6 @@ You are asked to generate a picture. Please just describe its features with no m
         global stable_diffusion_prompt
         stable_diffusion_prompt = answer
     else:
-        yield "Does the user want you to generate a picture?" + "\n\n" + out1['reply'] + "\n\n"
         prompt = prev_prompt + '''
 {{#user~}}
 {{query}}
