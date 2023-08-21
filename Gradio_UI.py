@@ -334,6 +334,11 @@ with gr.Blocks() as demo:
             return old_prompt
     fill_prompt = generate_prompt.then(fill_prompt_fn, text_input, text_input)
 
+    def hide_chain_output_fn():
+        if not is_generation:
+            return gr.update()
+        return gr.update(visible=False)
+
     def show_image_generation_done(history):
         print("show_image_generation_done " + str(is_generation))
         if not is_generation:
@@ -347,10 +352,8 @@ with gr.Blocks() as demo:
         print("Seed: " + str(seed))
         return seed
 
-    image_button.click(show_image, inputs = text_input, outputs = image_output)
-    seed_change_button.click(change_seed, inputs = seed_change_box, outputs = None)
-    
-    generate_image = fill_prompt.then(generate_image_if_needed, inputs=[text_input, image_output], outputs = image_output)
+    hide_chain_output = fill_prompt.then(hide_chain_output_fn, outputs=chain_output)
+    generate_image = hide_chain_output.then(generate_image_if_needed, inputs=[text_input, image_output], outputs = image_output)
     notify = generate_image.then(show_image_generation_done, inputs=chatbot, outputs=chatbot)
     lock_input = notify.then(lambda: gr.update(value="", interactive=True), inputs=None, outputs=txt)
     hash_shown = lock_input.then(hash_file, outputs=hash_output)
@@ -358,6 +361,13 @@ with gr.Blocks() as demo:
     publish = publish_button.click(sepolia_api, inputs = None, outputs = chain_output)
     show_transaction = publish.then(lambda: gr.update(visible=True), inputs = None, outputs = chain_output)
     move_files = show_transaction.then(move_files_fn, inputs=None, outputs=None)
+
+    # Generate image manually
+    hide_chain_output = image_button.click(lambda: gr.update(visible=False), outputs=chain_output)
+    generate_image = hide_chain_output.then(show_image, inputs = text_input, outputs = image_output)
+    show_hash = generate_image.then(hash_file, outputs=hash_output)
+
+    seed_change_button.click(change_seed, inputs = seed_change_box, outputs = None)
 
 
 demo.queue()
