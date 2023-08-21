@@ -304,7 +304,7 @@ with gr.Blocks() as demo:
         with gr.Column():
             gr.Markdown("**Stable Diffusion Generate Image**")
             with gr.Row():
-                text_input = gr.Textbox(interactive=True, lines=10)
+                text_input = gr.Textbox(interactive=True, lines=10, label='Prompt')
                 image_output = gr.Image()
             with gr.Row():
                 with gr.Column(scale=0.8, min_width=0):
@@ -314,9 +314,9 @@ with gr.Blocks() as demo:
                     seed_change_button = gr.Button(value="Confirm")
             image_button = gr.Button("Generate Image")
 
-            publish_button = gr.Button("Publish hash to Sepolia")
-            hash_output = gr.Textbox("Your hash values are shown here")
-            chain_output = gr.Textbox(interactive=False, visible=False)
+            publish_button = gr.Button("Publish the final hash to Sepolia")
+            hash_output = gr.Textbox("Your hash values are shown here", show_label=False)
+            chain_output = gr.Textbox(interactive=False, visible=False, show_label=False)
 
         
 
