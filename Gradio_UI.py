@@ -16,22 +16,19 @@ stablediffusion_repository = parameters['stablediffusion_repository']
 save_path = os.path.abspath(parameters['save_path'])
 
 import gradio as gr
-import random
 import time
 import guidance
 import torch
 import shutil
 from diffusers import StableDiffusionPipeline, DPMSolverMultistepScheduler
 
-import PIL
 from PIL import Image
 
 import web3
-from web3 import Web3, Account
+from web3 import Web3
 import hashlib
 
 import git
-from git import Repo
 
 guidance.llm = guidance.llms.OpenAI(
     'gpt-3.5-turbo',
@@ -203,7 +200,7 @@ def hash_file():
     hashvalue4.update(prompt_hash)
     hashvalue4.update(image_hash)
 
-    repo = Repo(stablediffusion_repository)
+    repo = git.Repo(stablediffusion_repository)
     commit_hash = repo.git.rev_parse("HEAD")
     
     hashvalue4.update(commit_hash.encode('utf-8'))
@@ -236,7 +233,7 @@ def sepolia_api():
     print(f"Connected to network with ID: {network_id}")
 
     private_key = parameters['my_private_key']
-    account = Account.from_key(private_key) 
+    account = web3.Account.from_key(private_key) 
     print(f"Loaded account: {account.address}")
 
     my_address = parameters['my_address']
