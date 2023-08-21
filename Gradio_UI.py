@@ -222,7 +222,7 @@ def hash_file():
     hash_file.close()
     hash_generated = True
 
-    return hashes
+    return gr.update(value=hashes, visible=True)
 
 w3 = Web3(Web3.HTTPProvider(parameters['my_provider_link']))
 global count
@@ -317,7 +317,7 @@ with gr.Blocks() as demo:
             image_button = gr.Button("Generate Image")
 
             publish_button = gr.Button("Publish the final hash to Sepolia")
-            hash_output = gr.Textbox("Your hash values are shown here", show_label=False)
+            hash_output = gr.Textbox(visible=False, show_label=False)
             chain_output = gr.Textbox(interactive=False, visible=False, show_label=False)
 
         
@@ -334,7 +334,7 @@ with gr.Blocks() as demo:
             return old_prompt
     fill_prompt = generate_prompt.then(fill_prompt_fn, text_input, text_input)
 
-    def hide_chain_output_fn():
+    def hide_if_needed():
         if not is_generation:
             return gr.update()
         return gr.update(visible=False)
@@ -352,7 +352,8 @@ with gr.Blocks() as demo:
         print("Seed: " + str(seed))
         return seed
 
-    hide_chain_output = fill_prompt.then(hide_chain_output_fn, outputs=chain_output)
+    hide_hash_output = fill_prompt.then(hide_if_needed, outputs=hash_output)
+    hide_chain_output = hide_hash_output.then(hide_if_needed, outputs=chain_output)
     generate_image = hide_chain_output.then(generate_image_if_needed, inputs=[text_input, image_output], outputs = image_output)
     notify = generate_image.then(show_image_generation_done, inputs=chatbot, outputs=chatbot)
     lock_input = notify.then(lambda: gr.update(value="", interactive=True), inputs=None, outputs=txt)
@@ -363,7 +364,8 @@ with gr.Blocks() as demo:
     move_files = show_transaction.then(move_files_fn, inputs=None, outputs=None)
 
     # Generate image manually
-    hide_chain_output = image_button.click(lambda: gr.update(visible=False), outputs=chain_output)
+    hide_hash_output = image_button.click(lambda: gr.update(visible=False), outputs=hash_output)
+    hide_chain_output = hide_hash_output.then(lambda: gr.update(visible=False), outputs=chain_output)
     generate_image = hide_chain_output.then(show_image, inputs = text_input, outputs = image_output)
     show_hash = generate_image.then(hash_file, outputs=hash_output)
 
