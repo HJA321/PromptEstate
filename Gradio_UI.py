@@ -69,7 +69,7 @@ def generate_answer(question):
 {{query}}
 {{~/user}}
 {{#system~}}                   
-Does the user want you to generate a picture now?
+Does the user want you to generate a picture now? The system can generate a picture, you just need to describe it.
 {{~/system}}
 {{#assistant~}}                    
 {{select 'reply' options=["Yes", "No"]}}
@@ -84,7 +84,7 @@ Does the user want you to generate a picture now?
 {{query}}
 {{~/user}}
 {{#system~}}
-You are asked to generate a picture. Please just describe its features with words, the system will generate a picture according to the description.
+You are asked to generate a picture. Please just describe its features with no more than 70 words, the system will generate a picture according to the description.
 {{~/system}}
 {{#assistant~}}
 {{gen 'answer' save_prompt="prompt" max_tokens=300}}
