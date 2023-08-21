@@ -10,6 +10,8 @@ import json
 with open(sys.argv[1], "r") as configs:
     parameters = json.load(configs)
 
+stablediffusion_repository = parameters['stablediffusion_repository']
+
 import gradio as gr
 import random
 import time
@@ -127,12 +129,10 @@ def show_image(prompt, image):
     global seed
     print(seed)
 
-    model_id = "./stabilityai--stable-diffusion-2-1"
-
     flag = False
     while (flag == False):
         try:
-            pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16)
+            pipe = StableDiffusionPipeline.from_pretrained(stablediffusion_repository, torch_dtype=torch.float16)
             flag = True
         except Exception as e:
             print("Exception: ", e)
@@ -219,7 +219,7 @@ def hash_file():
     hashvalue4.update(prompt_hash)
     hashvalue4.update(image_hash)
 
-    repo = Repo(parameters['stablediffusion_repository'])
+    repo = Repo(stablediffusion_repository)
     commit_hash = repo.git.rev_parse("HEAD")
     
     hashvalue4.update(commit_hash.encode('utf-8'))
