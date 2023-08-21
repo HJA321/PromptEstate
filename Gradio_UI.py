@@ -307,9 +307,9 @@ with gr.Blocks() as demo:
             with gr.Row():
                 with gr.Column(scale=0.8, min_width=0):
                     gr.Markdown("**Choose your preferred seed for Stable Diffusion**")
-                    seed_change_box = gr.Slider(minimum=0,maximum=2048,value=1024,step=1,interactive=True,scale=1)
+                    seed_change_box = gr.Slider(minimum=0,maximum=2048,value=1024,step=1,interactive=True)
                 with gr.Column(scale=0.2, min_width=0):
-                    seed_change_button = gr.Button(value="Confirm", scale=1)
+                    seed_change_button = gr.Button(value="Confirm")
             image_button = gr.Button("Generate Image")
 
             hash_button = gr.Button("Generate Hash")
