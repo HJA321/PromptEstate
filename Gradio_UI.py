@@ -226,7 +226,7 @@ def hash_file():
 
 w3 = Web3(Web3.HTTPProvider(parameters['my_provider_link']))
 global count
-count = w3.eth.get_transaction_count(parameters['my_address']) + 1
+count = w3.eth.get_transaction_count(parameters['my_address'])
 
 #Set Seplolia Testnet API
 def sepolia_api():
@@ -247,9 +247,8 @@ def sepolia_api():
     hash_path = os.path.join(generation_save_path, 'hash.txt')
     hashes = open(hash_path, "r").read()
 
-    nonce = w3.eth.get_transaction_count(my_address)
     transaction_setting = dict(
-        nonce=nonce,
+        nonce=count + 1,
         maxFeePerGas=3000000000,
         maxPriorityFeePerGas=2000000000,
         gas=100000,
