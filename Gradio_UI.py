@@ -22,8 +22,6 @@ import torch
 import shutil
 from diffusers import StableDiffusionPipeline, DPMSolverMultistepScheduler
 
-from PIL import Image
-
 import web3
 from web3 import Web3
 import hashlib
