@@ -303,7 +303,7 @@ with gr.Blocks() as demo:
 
     with gr.Tab("Chatbot"):
         gr.Markdown("**ChatBot**")
-        chatbot = gr.Chatbot([], elem_id="chatbot").style(height=300)
+        chatbot = gr.Chatbot([], elem_id="chatbot")
         with gr.Row():
             with gr.Column():
                 txt = gr.Textbox(
