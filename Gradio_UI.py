@@ -283,6 +283,9 @@ def sepolia_api():
     transaction_hash = transaction_raw_hash.hex() 
     transaction_details = "Transaction Hash: " + transaction_hash
 
+    transaction_hash_path = os.path.join(generation_save_path, "transaction-hash")
+    open(transaction_hash_path, 'w').write(transaction_hash + '\n')
+
     return transaction_details
 
 global bundle_count
