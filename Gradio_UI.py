@@ -326,7 +326,7 @@ with gr.Blocks() as demo:
             image_button = gr.Button("Generate Image")
 
             publish_button = gr.Button("Publish the final hash to Sepolia")
-            hash_output = gr.Textbox(visible=False, show_label=False)
+            hash_output = gr.Textbox(visible=False, show_label=False, lines=6)
             chain_output = gr.Textbox(interactive=False, visible=False, show_label=False)
 
         
